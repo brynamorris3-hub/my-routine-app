@@ -41,5 +41,32 @@
      <p>Everry accomplishment counts!</p>
      <p>Your adventure begins here.</p> 
         </div> 
+         <section class="welcome-card">
+    <h2>🦋 My Butterfly Goals</h2>
+    <p>Small steps, real accomplishments!</p>
+
+    <label><input type="checkbox" class="butterfly-task"> Get dressed</label>
+    <br>
+    <label><input type="checkbox" class="butterfly-task"> Eat breakfast</label>
+    <br>
+    <label><input type="checkbox" class="butterfly-task"> Drink water</label>
+    <br>
+    <label><input type="checkbox" class="butterfly-task"> Work on job applications</label>
+
+    <p id="butterfly-progress">0 of 4 goals completed</p>
+</section>
+<script>
+    const tasks = document.querySelectorAll(".butterfly-task");
+    const progress = document.getElementById("butterfly-progress");
+
+    function updateProgress() {
+        const completed = document.querySelectorAll(".butterfly-task:checked").length;
+        progress.textContent = completed + " of " + tasks.length + " goals completed";
+    }
+
+    tasks.forEach(function(task) {
+        task.addEventListener("change", updateProgress);
+    });
+</script>
      </body>
 </html>
