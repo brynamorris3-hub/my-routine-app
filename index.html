@@ -43,43 +43,127 @@
         </div> 
         
 
-<section class="welcome-card">
-    <h2>🦋 My Butterfly Goals</h2>
-    <p>Every accomplishment counts!</p>
 
-    <h3>🌞 Getting Ready</h3>
-    <label><input type="checkbox" class="butterfly-task"> Get dressed</label>
-    <br>
-    <label><input type="checkbox" class="butterfly-task"> Eat breakfast</label>
-
-    <h3>💧 Taking Care of Myself</h3>
-    <label><input type="checkbox" class="butterfly-task"> Drink water</label>
-    <br>
-    <label><input type="checkbox" class="butterfly-task"> Tidy for 5 minutes</label>
-
-    <h3>💼 Moving Forward</h3>
-    <label><input type="checkbox" class="butterfly-task"> Submit 1 job application</label>
-    <br>
-    <label><input type="checkbox" class="butterfly-task"> Work on professional development</label>
-
-    <h3>🧩 Something for Me</h3>
-    <label><input type="checkbox" class="butterfly-task"> Spend time puzzling</label>
-
-    <p id="butterfly-progress">0 of 7 goals completed</p>
-</section>
 
 <script>
-    const tasks = document.querySelectorAll(".butterfly-task");
-    const progress = document.getElementById("butterfly-progress");
+const goals = [
+    { name: "Get dressed", levels: ["Get dressed", null, null] },
+    { name: "Breakfast", levels: ["Eat breakfast", "Breakfast bonus 2", "Breakfast bonus 3"] },
+    { name: "Job applications", levels: ["Submit 1 application", "Submit 2 applications total", "Submit 3 applications total"] },
+    { name: "Professional development", levels: ["30 minutes", "45 minutes total", "60 minutes total"] },
+    { name: "Writing", levels: ["15 minutes", "30 minutes total", "45 minutes total"] },
+    { name: "Emails", levels: ["30 minutes", "45 minutes total", "60 minutes total"] },
+    { name: "Paperwork", levels: ["30 minutes", "45 minutes total", "60 minutes total"] },
+    { name: "Puzzling", levels: ["Spend time puzzling", null, null] },
+    { name: "Tidying", levels: ["Tidy for 5 minutes", null, null] }
+];
 
-    function updateProgress() {
-        const completed = document.querySelectorAll(".butterfly-task:checked").length;
-        progress.textContent = completed + " of " + tasks.length + " goals completed";
-    }
+const stages = [
+    { name: "Butterfly", emoji: "🦋" },
+    { name: "Caterpillar", emoji: "🐛" },
+    { name: "Larva", emoji: "🌱" }
+];
 
-    tasks.forEach(function(task) {
-        task.addEventListener("change", updateProgress);
+const today = new Date().toLocaleDateString("en-CA");
+const storageKey = "routine-progress-" + today;
+let completed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+let expanded = 0;
+
+function stageTasks(stageIndex) {
+    return goals.filter(goal => goal.levels[stageIndex] !== null);
+}
+
+function stageComplete(stageIndex) {
+    return stageTasks(stageIndex).every(goal =>
+        completed[goal.name + "-" + stageIndex]
+    );
+}
+
+function stageUnlocked(stageIndex) {
+    if (stageIndex === 0) return true;
+    return stageComplete(stageIndex - 1) && stageUnlocked(stageIndex - 1);
+}
+
+function toggleTask(key, checked) {
+    completed[key] = checked;
+    localStorage.setItem(storageKey, JSON.stringify(completed));
+    renderRoutine();
+}
+
+function renderRoutine() {
+    const container = document.getElementById("routine-stages");
+    container.innerHTML = "";
+
+    let total = 0;
+    let done = 0;
+
+    stages.forEach((stage, index) => {
+        const tasks = stageTasks(index);
+        const count = tasks.filter(goal =>
+            completed[goal.name + "-" + index]
+        ).length;
+
+        total += tasks.length;
+        done += count;
+
+        const unlocked = stageUnlocked(index);
+        const section = document.createElement("div");
+        section.style.margin = "20px 0";
+        section.style.padding = "15px";
+        section.style.border = "1px solid #e9d5ff";
+        section.style.borderRadius = "15px";
+
+        const heading = document.createElement("h3");
+        heading.textContent =
+            stage.emoji + " " + stage.name +
+            " — " + count + "/" + tasks.length +
+            (unlocked ? "" : " 🔒");
+
+        section.appendChild(heading);
+
+        if (unlocked) {
+            const showTasks = index === expanded || !stageComplete(index);
+
+            if (showTasks) {
+                tasks.forEach(goal => {
+                    const key = goal.name + "-" + index;
+                    const label = document.createElement("label");
+                    label.style.display = "block";
+                    label.style.margin = "12px 0";
+                    label.style.textAlign = "left";
+
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = !!completed[key];
+                    checkbox.addEventListener("change", () => {
+                        toggleTask(key, checkbox.checked);
+                    });
+
+                    label.appendChild(checkbox);
+                    label.appendChild(
+                        document.createTextNode(" " + goal.levels[index])
+                    );
+                    section.appendChild(label);
+                });
+            }
+
+            const button = document.createElement("button");
+            button.textContent = showTasks ? "Collapse" : "Expand";
+            button.addEventListener("click", () => {
+                expanded = showTasks ? -1 : index;
+                renderRoutine();
+            });
+            section.appendChild(button);
+        }
+
+        container.appendChild(section);
     });
+
+    document.getElementById("overall-progress").textContent =
+        "Overall progress: " + done + " of " + total + " goals completed";
+}
+
+renderRoutine();
 </script>
      </body>
 </html>
