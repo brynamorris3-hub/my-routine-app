@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Routine Adventure</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#43345c;background:#fce7f3}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px 12px 50px;background:linear-gradient(135deg,#fce7f3,#e0e7ff);text-align:center}main{max-width:660px;margin:auto}.card{background:#fff;border-radius:22px;padding:22px;margin:18px auto;box-shadow:0 8px 25px rgba(80,50,120,.12)}h1{color:#8050dc;font-size:clamp(25px,6vw,34px);margin:8px 0}h2{margin:4px 0 10px;color:#6941aa}p{line-height:1.5}.muted{color:#6d627d;font-size:.93rem}.stage{border:1px solid #e9d5ff;border-radius:16px;margin:14px 0;padding:14px;text-align:left;background:#fdfbff}.stage.locked{opacity:.68;background:#f7f5fa}.stage-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.stage-head h3{margin:0;font-size:1.08rem}.stage-status{font-size:.87rem;color:#665b75}.task{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:10px;background:#fff;border-radius:10px;cursor:pointer}.task input{width:20px;height:20px;accent-color:#8654d8;flex-shrink:0;margin:0}.task span{line-height:1.35}.task:has(input:checked) span{text-decoration:line-through;color:#756985}.toggle{border:1px solid #c8b4e6;background:#fff;color:#63429a;border-radius:10px;padding:7px 11px;cursor:pointer}.progress{height:12px;border-radius:99px;background:#e9e0f2;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:linear-gradient(90deg,#d995e8,#8b5cf6);transition:width .2s}.pill{display:inline-block;background:#f0e7ff;color:#6d469d;border-radius:99px;padding:5px 10px;font-size:.82rem}.small{font-size:.86rem}.notice{background:#faf5ff;border-radius:12px;padding:12px;text-align:left}.footer{font-size:.83rem;color:#6d627d}
+</style>
+</head>
+<body>
+<main>
+<header class="card">
+<h1>🦋 My Routine Adventure</h1>
+<p>Every accomplishment counts!</p>
+<p class="muted">Your adventure begins here.</p>
+</header>
+<section class="card" aria-labelledby="daily-heading">
+<h2 id="daily-heading">🌟 My Daily Adventure</h2>
+<p id="date-label" class="muted"></p>
+<p id="overall-progress" aria-live="polite">Loading your goals…</p>
+<div class="progress" role="progressbar" aria-label="Daily progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+<div id="routine-stages"></div>
+</section>
+<section class="card">
+<h2>✨ Bonus accomplishments</h2>
+<p class="muted">These count as wins, but never block the next stage.</p>
+<div id="bonus-tasks"></div>
+</section>
+<p class="footer">Your checkmarks are saved in this browser on this device. They reset for a new day; clearing browser data may erase them.</p>
+</main>
+<script>
+(function(){
+'use strict';
+// Cumulative levels: checking a higher level also checks its earlier levels.
+const goals=[
+ {id:'dress',name:'Get dressed',levels:['Get dressed',null,null]},
+ {id:'breakfast',name:'Breakfast',levels:['Eat breakfast','Breakfast bonus 2','Breakfast bonus 3']},
+ {id:'jobs',name:'Job applications',levels:['Submit 1 application','Submit 2 applications total','Submit 3 applications total']},
+ {id:'development',name:'Professional development',levels:['30 minutes','45 minutes total','60 minutes total']},
+ {id:'writing',name:'Writing',levels:['15 minutes','30 minutes total','45 minutes total']},
+ {id:'emails',name:'Emails',levels:['30 minutes','45 minutes total','60 minutes total']},
+ {id:'paperwork',name:'Paperwork',levels:['30 minutes','45 minutes total','60 minutes total']},
+ {id:'puzzling',name:'Puzzling',levels:['Spend time puzzling',null,null]},
+ {id:'tidy',name:'Tidying',levels:['Tidy for 5 minutes',null,null]},
+ {id:'water',name:'Water',levels:['Drink some water',null,null]}
+];
+const bonus=[{id:'walkapps',name:'Spend time on walking apps'},{id:'games',name:'Check money-earning game progress'}];
+const stages=[{name:'Butterfly',emoji:'🦋'},{name:'Caterpillar',emoji:'🐛'},{name:'Larva',emoji:'🌱'}];
+function localDateKey(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+const today=localDateKey(),storageKey='my-routine-v2-'+today;
+let completed={};try{const data=JSON.parse(localStorage.getItem(storageKey)||'{}');if(data&&typeof data==='object'&&!Array.isArray(data))completed=data}catch(e){}
+let openStage=0;
+function key(goal,level){return (typeof goal==='string'?goal:goal.id)+'-'+level}
+function itemsAt(level){return goals.filter(g=>g.levels[level]!==null)}
+function stageDone(level){return itemsAt(level).every(g=>!!completed[key(g,level)])}
+function unlocked(level){for(let i=0;i<level;i++){if(!stageDone(i))return false}return true}
+function save(){try{localStorage.setItem(storageKey,JSON.stringify(completed))}catch(e){console.warn('Could not save routine progress',e)}}
+function update(goal,level,checked){completed[key(goal,level)]=checked;if(checked){for(let i=0;i<level;i++)if(goal.levels[i]!==null)completed[key(goal,i)]=true}else{for(let i=level+1;i<3;i++)if(goal.levels[i]!==null)completed[key(goal,i)]=false}save();if(checked&&stageDone(level)&&unlocked(level+1)&&level<2)openStage=level+1;render()}
+function makeTask(text,checked,onChange){const label=document.createElement('label');label.className='task';const input=document.createElement('input');input.type='checkbox';input.checked=checked;input.addEventListener('change',()=>onChange(input.checked));const span=document.createElement('span');span.textContent=text;label.append(input,span);return label}
+function render(){const root=document.getElementById('routine-stages');root.replaceChildren();let done=0,total=0;
+ stages.forEach((stage,level)=>{const items=itemsAt(level),count=items.filter(g=>completed[key(g,level)]).length;total+=items.length;done+=count;const allowed=unlocked(level),finished=stageDone(level);const box=document.createElement('div');box.className='stage'+(allowed?'':' locked');const head=document.createElement('div');head.className='stage-head';const title=document.createElement('h3');title.textContent=stage.emoji+' '+stage.name;const status=document.createElement('span');status.className='stage-status';status.textContent=count+'/'+items.length+(allowed?'':' 🔒');head.append(title,status);box.append(head);
+ if(allowed){const show=openStage===level;const toggle=document.createElement('button');toggle.className='toggle';toggle.type='button';toggle.textContent=show?'Hide tasks':'Show tasks';toggle.setAttribute('aria-expanded',String(show));toggle.addEventListener('click',()=>{openStage=show?-1:level;render()});box.append(toggle);if(show){items.forEach(g=>box.append(makeTask(g.levels[level],!!completed[key(g,level)],v=>update(g.id,level,v))))}if(finished){const msg=document.createElement('p');msg.className='small';msg.textContent='✓ Stage completed!';box.append(msg)}}else{const msg=document.createElement('p');msg.className='muted small';msg.textContent='Complete the previous stage to unlock.';box.append(msg)}root.append(box)});
+ const next=stages.findIndex((_,i)=>unlocked(i)&&!stageDone(i));if(next>=0&&openStage>=0&&!unlocked(openStage)){openStage=next;render();return}if(next>=0&&openStage===-1){/* Allow all stages to stay collapsed by choice. */}
+ document.getElementById('overall-progress').textContent='Overall progress: '+done+' of '+total+' goals completed';const percent=total?Math.round(done/total*100):0;document.getElementById('progress-fill').style.width=percent+'%';document.getElementById('progress-bar').setAttribute('aria-valuenow',String(percent));
+ const bonusRoot=document.getElementById('bonus-tasks');bonusRoot.replaceChildren();bonus.forEach(b=>{const k='bonus-'+b.id;bonusRoot.append(makeTask(b.name,!!completed[k],v=>{completed[k]=v;save();render()}))});
+ }
+ document.getElementById('date-label').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+ render();
+})();
+</script>
+</body>
+</html>
